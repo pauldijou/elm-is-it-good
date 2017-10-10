@@ -7,10 +7,34 @@
 		<title>reveal.js</title>
 
 		<link rel="stylesheet" href="css/reveal.css">
-		<link rel="stylesheet" href="css/theme/black.css">
+		<link rel="stylesheet" href="css/theme/solarized.css">
 
 		<!-- Theme used for syntax highlighting of code -->
 		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<style>
+			* {
+			  tab-size: 2;
+			}
+
+			.success {
+				color: green;
+			}
+			.warning {
+				color: orange;
+			}
+			.error {
+				color: red;
+			}
+			.logo {
+				border: none !important;
+				box-shadow: none !important;
+				width: 50%;
+			}
+			.reveal p {
+				margin: 10px 0;
+			}
+		</style>
 
 		<!-- Printing and PDF exports -->
 		<script>
@@ -24,8 +48,616 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
+				<section>
+					<h1>Elm</h1>
+					<h2>Est-ce si bien qu'on le dit ?</h2>
+					<p>
+						<img class="logo" src="/logo_color.png" alt="">
+					</p>
+				</section>
+				<section>
+					<h2>Paul Dijou</h2>
+					<h4>Nomalab</h4>
+				</section>
+				<section>
+					<h2>Goal</h2>
+					<aside class="notes">
+						<p>Pas trop de présenter le langage, déjà plein de ressources en ligne</p>
+						<p>Plutôt un retour d'expérience après plus d'un an d'utilisation en prod, avantages / inconvénients</p>
+						<p>Plein de slides sur le langage, plein de blabla sur le retour d'expérience</p>
+					</aside>
+				</section>
+				<section>
+					<h2>Elm, c'est quoi ?</h2>
+					<p class="fragment">Un langage fonctionnel</p>
+					<p class="fragment">Fortement typé</p>
+					<p class="fragment">Immutable</p>
+					<p class="fragment">Pur</p>
+					<p class="fragment">Qui compile vers JavaScript</p>
+					<aside class="notes">
+						<p>Pur => même arguments == même résultat</p>
+						<p>Pur => pas de side effect</p>
+					</aside>
+				</section>
+				<section>
+					<h2>Un petit exemple</h2>
+					<pre><code class="elm" data-trim data-noescape>
+					-- inside module "Example"
+
+					constant: String
+					constant = "42"
+
+					type Boolean = Truth | Lie
+
+					lie: Boolean
+					lie = Lie
+					</code></pre>
+					<pre><code class="javascript" data-trim data-noescape>
+					var _username$project$Example$constant = '42'
+
+					var _username$project$Example$lie = { ctor: 'Lie' }
+					</code></pre>
+					<aside class="notes">
+						Syntaxe du JS basée sur username / repo. Elimination des types dans le JS final.
+					</aside>
+				</section>
+				<section>
+					<section>
+						<h2>Fonctionnel</h2>
+						<aside class="notes">
+							<ul>
+								<li>High order functions => prendre des fonctions en paramètres</li>
+								<li>Changement d'état == évaluation d'une fonction</li>
+							</ul>
+						</aside>
+					</section>
+					<section>
+						<h4>Curry</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						add: Int -> Int -> Int
+						add x y = x + y
+
+						addTwo: Int -> Int
+						addTwo = add 2
+
+						addTwoAll: List Int -> List Int
+						addTwoAll = List.map addTwo
+
+						sumAll: List Int -> Int
+						sumAll = List.foldl add 0
+						</code></pre>
+					</section>
+					<section>
+						<h4>Pipe</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						isFirstUpper: String -> Bool
+						isFirstUpper value =
+						  value -- String
+						  |> String.left 1 -- String
+						  |> String.toList -- List Char
+						  |> List.head -- Maybe Char
+						  |> Maybe.map Char.isUpper -- Maybe Bool
+						  |> Maybe.withDefault False -- Bool
+
+						String.left: Int -> String -> String
+						String.toList: String -> List Char
+						List.head: List a -> Maybe a
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h2>Fortement typé</h2>
+					</section>
+					<section>
+						<h4>Primitives</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						str: String
+						str = "a"
+
+						c: Char
+						c = 'a'
+
+						boolean: Bool
+						boolean = True
+
+						integer: Int
+						integer = 42
+
+						float: Float
+						float = 4.2
+						</code></pre>
+					</section>
+					<section>
+						<h4>Union types</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						type Something = This | That
+
+						-- With arguments
+						type Tree = Node Tree Tree | Leaf Int
+
+						-- Opaque type
+						type Hidden = Hidden
+
+						-- Generics
+						type Box a = Empty | Filled a
+						</code></pre>
+						<aside class="notes">
+							<p>A gauche du "=", pour les signatures de functions, à droite du égal, pour construire les expressions</p>
+						</aside>
+					</section>
+					<section>
+						<h4>Aliases</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						-- Simple alias
+						type alias Name = String
+
+						-- Records
+						type alias User = { name: Name, age: Int }
+
+						user1: User
+						user1 = { name = "John", age = 42 }
+
+						user2: User
+						user2 = User "John" 42
+
+						-- wrong
+						type alias Person = { name: Name, siblings: List Person }
+						</code></pre>
+					</section>
+					<section>
+						<h4>Types communs</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						type List a = Nil | Cons a (List a)
+						-- also Array and Set
+
+						type Maybe a = Nothing | Just a
+
+						type Result e a = Err e | Ok a
+
+						-- A little bit more complex in reality
+						type Dict k v = Node k v (Dict k v) (Dict k v) | Leaf
+
+						tuple: (Int, String)
+						tuple = (42, "42")
+
+						-- comparable
+						</code></pre>
+					</section>
+					<section>
+						<pre><code class="elm" data-trim data-noescape>
+						constant: String
+						constant = 42
+						</code></pre>
+						<pre><code class="elm" data-trim data-noescape>
+	-- TYPE MISMATCH ----------------------------------------------
+
+	The definition of `constant` does not match its type annotation.
+
+	1| constant: String
+	2|>constant = 42
+
+	The type annotation for `constant` says it is a:
+
+	    String
+
+	But the definition (shown above) is a:
+
+	    number
+						</code></pre>
+					</section>
+					<section>
+						<h4>Pattern matching</h4>
+						<pre><code class="elm" data-trim data-noescape>
+							type Maybe a = Nothing | Just a
+
+							addTwoIfPossible: Maybe Int -> Maybe Int
+							addTwoIfPossible maybeInt =
+							  case maybeInt of
+							    Nothing -> Nothing
+							    Just value -> Just (addTwo value)
+
+							addTwoIfPossibleBis: Maybe Int -> Maybe Int
+							addTwoIfPossibleBis = Maybe.map addTwo
+						</code></pre>
+						<p class="fragment">Au passage, rien ne peut être null ou undefined</p>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h2>Immutable</h2>
+					</section>
+					<section>
+						<h4>Mettre à jour un record</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						user3: User
+						user3 = { user1 | name = "Jane", age = "24" }
+						</code></pre>
+						<div class="fragment">
+						<h4>Mettre à jour une liste</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						list: List Int
+						list = [ 1, 2, 3, 4 ]
+
+						list2: List Int
+						list2 = List.map (\i -> i + 1) list
+
+						list3: List Int
+						list3 = List.map (\i -> i - 1) list2
+						</code></pre>
+						</div>
+					</section>
+					<section>
+						<p>
+							Elm peut réorganiser vos expressions à son bon vouloir si elles ne dépendent pas les unes des autres.
+						</p>
+					</section>
+					<section>
+						<h4>Egalité</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						oneVsTwo: Bool
+						oneVsTwo = (list == list2) -- False
+
+						oneVsThren: Bool
+						oneVsThren = (list == list3) -- True
+						</code></pre>
+					</section>
+					<section>
+						<h4>Virtual DOM</h4>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h2>Pur</h2>
+					</section>
+					<section>
+						<h4>Task</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						-- wrong
+						-- same arguments == same result
+						random: () -> Int
+						random = some very bad code
+
+						-- right
+						random: Task Never Int
+						random = some good code
+						</code></pre>
+						<pre class="fragment"><code class="elm" data-trim data-noescape>
+						-- Exception
+						-- should be bad but isn't
+						add: Int -> Int -> Int
+						add x y = Debug.log "Add result" (x + y)
+						</code></pre>
+					</section>
+					<section>
+						<h4>Effects</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						readyToTrigger: Cmd Msg
+						readyToTrigger = Cmd.none
+
+						readyToListen: Sub Msg
+						readyToListen = Sub.none
+						</code></pre>
+					</section>
+					<section>
+						<h4>Effect Manager</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						-- Cmd & Sub constructor
+						type alias State msg = { subscriptions: List (ManagerSub msg), ... }
+
+						onEffects:
+						  Plateform.Router msg Msg ->
+						  List (ManagerCmd msg) ->
+						  List (ManagerSub msg) ->
+						  State msg ->
+						  Task Never (State msg)
+
+						onSelfMsg:
+						  Platform.Router msg Msg ->
+						  Msg ->
+						  State msg ->
+						  Task Never (State msg)
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h2>Application Elm</h2>
+					</section>
+					<section>
+						<h3>Données vs Evènements</h3>
+						<pre><code class="elm" data-trim data-noescape>
+						import Pages.Settings as Settings
+
+						type alias Model =
+							{ user: User
+							, currentPage: Page
+							}
+
+						type Page = Home | Settings Settings.Model
+
+						type Msg
+							= Something
+							| SettingsMsg Settings.Msg
+						</code></pre>
+						<aside class="notes">
+							Comme Redux : Model => state et Msg => actions
+						</aside>
+					</section>
+					<section>
+						<h3>La boucle</h3>
+						<pre><code class="elm" data-trim data-noescape>
+						update: Msg -> Model -> (Model, Cmd Msg)
+						update msg model = case msg of
+							Something -> (model, Cmd.none)
+
+							-- TEA (The Elm Architecture)
+							SettingsMsg subMsg -> case model.page of
+								Home ->
+									model ! []
+
+								Settings subModel ->
+									let
+										(md, fx) = Settings.update subMsg subModel
+									in
+										{ model | page = Settings md }
+										! [ Cmd.map SettingsMsg fx ]
+						</code></pre>
+					</section>
+					<section>
+						<h3>Démarrer et écouter</h3>
+						<pre><code class="elm" data-trim data-noescape>
+						init: (Model, Cmd Msg)
+						init =
+							{ user = ..., page = Home } ! []
+
+						subscriptions: Model -> Sub Msg
+						subscriptions model =
+							Sub.none
+						</code></pre>
+					</section>
+					<section>
+						<h3>Finaliser le programme</h3>
+						<pre><code class="elm" data-trim data-noescape>
+						main: Platform.Program Never Model Msg
+						man =
+							Platform.program
+								{ init = init
+								, update = update
+								, subscriptions = subscriptions
+								}
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Program signature</li>
+								<li>Program withFlags</li>
+							</ul>
+						</aside>
+					</section>
+					<section>
+						<h3>Afficher des choses</h3>
+						<pre><code class="elm" data-trim data-noescape>
+						view: Model -> Html Msg
+						view model =
+							Html.div
+								[ Html.onClick Something ]
+								[ Html.text "Click me pretty please" ]
+						</code></pre>
+						<pre><code class="html" data-trim data-noescape>
+						&lt;div onClick="..."&gt;
+							Click me pretty please
+						&lt;/div&gt;
+						</code></pre>
+						<aside class="notes">
+							<p>Html.program</p>
+						</aside>
+					</section>
+					<section>
+						<h3>Exécuter une Task</h3>
+						<pre><code class="elm" data-trim data-noescape>
+						apiRequest: Task Http.Error Http.Response
+						apiRequest = ...
+
+						type Msg = Request | Requested (Result Http.Error Http.Response)
+
+						update: Msg -> Model -> (Model, Cmd Msg)
+						update msg model = case msg of
+							Request -> model ! [ Task.attempt Requested apiRequest ]
+
+							Requested result -> case result of
+								Ok response -> ...
+								Err failure -> ...
+						</code></pre>
+						<aside class="notes">
+							<p>Impossible de faire du side-effet ou du non-pur synchrone contrairement à JS où Math.random ou Date.now sont synchrones</p>
+						</aside>
+					</section>
+					<section>
+						<img src="tea.jpg" style="height:50vh" alt="">
+						<p>(par André Staltz)</p>
+						<aside class="notes">
+							<p>Manque que les updates peuvent lancer des Cmd qui reviennent dans l'update</p>
+							<p>Manque les Sub</p>
+						</aside>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>Communiquer avec JavaScript</h3>
+					</section>
+					<section>
+						<h4>Ports</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						port fromJsToElm: (Json.Encode.Value -> Msg) -> Sub Msg
+
+						port fromElmToJs: Json.Encode.Value -> Cmd Msg
+						</code></pre>
+						<pre class="fragment"><code class="elm" data-trim data-noescape>
+						type Msg = ... | FromJS Json.Encode.Value
+
+						subscriptions = fromJsToElm FromJS
+
+						update msg model = case msg of
+							FromJS value -> model ! [ fromElmToJs value ]
+						</code></pre>
+					</section>
+					<section>
+						<h4>Native</h4>
+						<pre><code class="elm" data-trim data-noescape>
+						import Native.Helpers
+
+						random: () -> Float
+						random = Native.Helpers.random
+						</code></pre>
+						<pre class="fragment"><code class="javascript" data-trim data-noescape>
+						var _username$project$Native_Helpers = function () {
+							function random() {
+								return Math.random()
+							}
+
+							return { random: random }
+						}()
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Utile pour les interfaces web pas encore implémentées</li>
+								<li>(histoire de localStorage)</li>
+								<li>Whitelist</li>
+								<li>Core, Http, Html</li>
+								<li>Runtime errors</li>
+							</ul>
+						</aside>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h2>Mythbuster</h2>
+					</section>
+					<section>
+						<h3>No runtime error</h3>
+						<p class="fragment success">Confirmed</p>
+						<p class="fragment warning">(99%)</p>
+						<aside class="notes">
+							<p>Bugs dans le compilateur (nom type avec un .)</p>
+							<p>Ports parfois trop laxistes avec Json.Encode.Value, structure récursive</p>
+							<p>Code natif</p>
+						</aside>
+					</section>
+					<section>
+						<h3>Beginner friendly</h3>
+						<p class="fragment success">Confirmed</p>
+						<aside class="notes">
+							<p>Syntaxe simple</p>
+							<p>Pas possible de tout casser</p>
+							<p>Mais quelques concepts moins simples (effect manager)</p>
+						</aside>
+					</section>
+					<section>
+						<h3>Super fast compile time</h3>
+						<p class="fragment error">Busted</p>
+						<aside class="notes">
+							<p>Vrai pour les tutos et hello worlds</p>
+							<p>Devient de plus en plus lent avec le projet qui croit, même avec compilation incrémentale</p>
+							<p>Mais Evan bosse dessus en ce moment même</p>
+						</aside>
+					</section>
+					<section>
+						<h3>Nice error messages</h3>
+						<p class="fragment success">Confirmed</p>
+						<p class="fragment warning">(nearly)</p>
+						<aside class="notes">
+							<p>Vraiment biens</p>
+							<p>Mais parfois à côté de la plaque</p>
+						</aside>
+					</section>
+					<section>
+						<h3>Release often, release early</h3>
+						<p class="fragment error">Busted</p>
+						<aside class="notes">
+							<p>Releases de plus en plus longues</p>
+							<p>Les bug fixes vont direment dans la release major suivante plutôt qu'être release juste eux</p>
+						</aside>
+					</section>
+				</section>
+				<section>
+					<h2>Les bons points</h2>
+					<p class="fragment">Typage</p>
+					<p class="fragment">Simple</p>
+					<p class="fragment">Compréhensible</p>
+					<p class="fragment">Pub/Sub typé</p>
+					<p class="fragment">Refactoring</p>
+					<p class="fragment">TEA</p>
+					<p class="fragment">Communauté</p>
+					<p class="fragment">Créateur</p>
+					<aside class="notes">
+						<ul>
+							<li>Typage frontend == LOVE</li>
+							<li>Pas ge magie</li>
+							<li>Communauté super ouverte, cool, qui répond</li>
+							<li>Evan prend le temps de faire les choses, y réfléchit bien, trouve de bonnes solutions, apporte des réponses à des vrais problèmes</li>
+						</ul>
+					</aside>
+				</section>
+				<section>
+					<h2>Les mauvais points</h2>
+					<p class="fragment">Verbeux</p>
+					<p class="fragment">Tooling</p>
+					<p class="fragment">Bas niveau</p>
+					<p class="fragment">Tradeoffs</p>
+					<p class="fragment">FFI</p>
+					<p class="fragment">Communauté</p>
+					<p class="fragment">Créateur</p>
+					<aside class="notes">
+						<ul>
+							<li>Peu extension, pas d'abstraction</li>
+							<li>Quelques tradeoffs discutables, genre les comparables</li>
+							<li>FFI (Foreign Function Interface) == Native => pas ouf</li>
+							<li>Communauté petite</li>
+							<li>Advanced users qui partent les uns après les autres</li>
+							<li>Evan refuse quasi toute aide sur le projet, n'est pas toujous ouvert aux suggestions de la communauté, est très fermé sur certains aspects comme le server side, petit côté dictatorial (cf 4 espaces elm-format)</li>
+						</ul>
+					</aside>
+				</section>
+				<section>
+					<h2>Comparaison rapide</h2>
+					<p>TypeScript / Flow</p>
+					<p>React / Vue.js</p>
+					<p>Redux / Vuex</p>
+					<p>Immutable.js</p>
+				</section>
+				<section>
+					<h2>Server-Side</h2>
+					<aside class="notes">
+						<ul>
+							<li>Pas vraiment approuvé par Evan</li>
+							<li>Beaucoup de Native vu qu'aucune API supportée</li>
+							<li>On bosse dessus pour corriger un peu ca</li>
+							<li>Pas autant de features qu'un Scala ou Haskell</li>
+							<li>Mais reste simple, pur et efficace</li>
+						</ul>
+					</aside>
+				</section>
+				<section>
+					<h2>Retour d'expérience</h2>
+					<p>Production</p>
+					<p>541 modules Elm, 56k loc</p>
+					<p>45 fichiers JS, 5k loc</p>
+					<aside class="notes">
+						<ul>
+							<li>Vraiment en confiance pour la mise en prod</li>
+							<li>Focus sur les tests de features</li>
+							<li>Developer experience en chute libre avec les temps de compilation</li>
+						</ul>
+					</aside>
+				</section>
+				<section>
+					<h2>Merci !</h2>
+					<h3>Questions ?</h3>
+					<br>
+					<p>
+						<img class="logo" src="/logo_color.png" alt="">
+					</p>
+				</section>
 			</div>
 		</div>
 
@@ -37,6 +669,8 @@
 			// - https://github.com/hakimel/reveal.js#configuration
 			// - https://github.com/hakimel/reveal.js#dependencies
 			Reveal.initialize({
+				history: true,
+				// slideNumber: true,
 				dependencies: [
 					{ src: 'plugin/markdown/marked.js' },
 					{ src: 'plugin/markdown/markdown.js' },
